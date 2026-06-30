@@ -3,8 +3,10 @@ import { dashboard, login, register } from '@/routes';
 
 export default function Welcome({
     canRegister = true,
+    containerId,
 }: {
     canRegister?: boolean;
+    containerId: string;
 }) {
     const { auth } = usePage().props;
 
@@ -389,6 +391,9 @@ export default function Welcome({
                                     />
                                 </g>
                             </svg>
+                            <p className="absolute top-3 left-3 z-10 rounded bg-[#1b1b18]/80 px-2 py-1 font-mono text-xs text-white dark:bg-[#EDEDEC]/90 dark:text-[#1b1b18]">
+                                Container: {containerId}
+                            </p>
                             <div className="absolute inset-0 rounded-t-lg shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-t-none lg:rounded-r-lg dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]"></div>
                         </div>
                     </main>
