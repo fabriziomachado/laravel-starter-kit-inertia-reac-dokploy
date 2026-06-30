@@ -130,9 +130,9 @@ it('reports a validation message when the email is invalid', function (): void {
     expect($message)->toBe('The :attribute must be a valid email address.');
 });
 
-it('requires string values', function (): void {
+it('rejects non-string values', function (): void {
     $rule = new ValidEmail;
 
     expect(fn () => $rule->validate('email', 123, fn (): never => throw new Exception('Should not fail')))
-        ->toThrow(AssertionError::class);
+        ->toThrow(TypeError::class);
 });
