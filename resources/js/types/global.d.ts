@@ -1,4 +1,5 @@
-import type { Auth } from '@/types/auth';
+import '@inertiajs/core';
+import type { Auth } from './auth';
 
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
@@ -6,7 +7,6 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
-            [key: string]: unknown;
         };
     }
 }
