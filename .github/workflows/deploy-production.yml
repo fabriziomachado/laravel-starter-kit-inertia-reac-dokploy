@@ -76,12 +76,12 @@ jobs:
             local service_name="$2"
 
             curl -sf -X POST "${DOKPLOY_URL}/api/application.saveDockerProvider" \
-              -H "Authorization: Bearer ${DOKPLOY_API_KEY}" \
+              -H "x-api-key: ${DOKPLOY_API_KEY}" \
               -H "Content-Type: application/json" \
               -d "{\"applicationId\":\"${app_id}\",\"dockerImage\":\"${IMAGE}\"}"
 
             curl -sf -X POST "${DOKPLOY_URL}/api/application.deploy" \
-              -H "Authorization: Bearer ${DOKPLOY_API_KEY}" \
+              -H "x-api-key: ${DOKPLOY_API_KEY}" \
               -H "Content-Type: application/json" \
               -d "{\"applicationId\":\"${app_id}\",\"title\":\"Deploy ${service_name} ${GITHUB_REF_NAME}\",\"description\":\"Production release ${GITHUB_REF_NAME}\"}"
           }

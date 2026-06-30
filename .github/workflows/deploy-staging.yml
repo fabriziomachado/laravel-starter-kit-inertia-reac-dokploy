@@ -70,11 +70,11 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
         run: |
           curl -sf -X POST "${DOKPLOY_URL}/api/application.saveDockerProvider" \
-            -H "Authorization: Bearer ${DOKPLOY_API_KEY}" \
+            -H "x-api-key: ${DOKPLOY_API_KEY}" \
             -H "Content-Type: application/json" \
             -d "{\"applicationId\":\"${APPLICATION_ID}\",\"dockerImage\":\"${IMAGE}\"}"
 
           curl -sf -X POST "${DOKPLOY_URL}/api/application.deploy" \
-            -H "Authorization: Bearer ${DOKPLOY_API_KEY}" \
+            -H "x-api-key: ${DOKPLOY_API_KEY}" \
             -H "Content-Type: application/json" \
             -d "{\"applicationId\":\"${APPLICATION_ID}\",\"title\":\"Deploy staging ${GITHUB_SHA::7}\",\"description\":\"CI/CD from develop branch\"}"
