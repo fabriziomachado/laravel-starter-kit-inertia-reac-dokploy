@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Illuminate\Validation\Rules\Unique;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 it('defines validation rules for the authenticated user', function (): void {
     $user = User::factory()->create([
@@ -30,5 +31,5 @@ it('aborts when the user is not authenticated', function (): void {
     $request->setUserResolver(fn (): null => null);
 
     expect(fn (): array => $request->rules())
-        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+        ->toThrow(HttpException::class);
 });

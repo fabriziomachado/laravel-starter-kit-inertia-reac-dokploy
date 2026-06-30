@@ -18,9 +18,7 @@ final class UpdateUserRequest extends FormRequest
     {
         $user = $this->user();
 
-        if (! $user instanceof User) {
-            abort(403);
-        }
+        abort_unless($user instanceof User, 403);
 
         return [
             'name' => ['required', 'string', 'max:255'],
