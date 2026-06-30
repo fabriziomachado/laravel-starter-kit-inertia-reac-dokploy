@@ -117,3 +117,22 @@ it('fails with invalid email', function (string $email): void {
     'user@sub.-domain.com',
     '𝓊𝓃𝒾𝒸ℴ𝒹ℯ@𝒹ℴ𝓂𝒶𝒾𝓃.𝒸ℴ𝓂',
 ]);
+
+it('reports a validation message when the email is invalid', function (): void {
+    $rule = new ValidEmail;
+
+    $message = null;
+
+    $rule->validate('email', 'not-valid', function (string $validationMessage) use (&$message): void {
+        $message = $validationMessage;
+    });
+
+    expect($message)->toBe('The :attribute must be a valid email address.');
+});
+
+it('requires string values', function (): void {
+    $rule = new ValidEmail;
+
+    expect(fn () => $rule->validate('email', 123, fn (): never => throw new Exception('Should not fail')))
+        ->toThrow(AssertionError::class);
+});
