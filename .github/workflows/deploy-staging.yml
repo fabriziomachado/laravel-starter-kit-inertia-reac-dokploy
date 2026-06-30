@@ -69,12 +69,22 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository }}:staging
           GITHUB_SHA: ${{ github.sha }}
         run: |
-          curl -sf -X POST "${DOKPLOY_URL}/api/application.saveDockerProvider" \
-            -H "x-api-key: ${DOKPLOY_API_KEY}" \
-            -H "Content-Type: application/json" \
-            -d "{\"applicationId\":\"${APPLICATION_ID}\",\"dockerImage\":\"${IMAGE}\"}"
+          set -euo pipefail
+          DOKPLOY_URL="${DOKPLOY_URL%/}"
 
-          curl -sf -X POST "${DOKPLOY_URL}/api/application.deploy" \
-            -H "x-api-key: ${DOKPLOY_API_KEY}" \
-            -H "Content-Type: application/json" \
-            -d "{\"applicationId\":\"${APPLICATION_ID}\",\"title\":\"Deploy staging ${GITHUB_SHA::7}\",\"description\":\"CI/CD from develop branch\"}"
+          response="$(
+            curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "${DOKPLOY_URL}/api/application.deploy" \
+              -H "x-api-key: ${DOKPLOY_API_KEY}" \
+              -H "Content-Type: application/json" \
+              -d "{\"applicationId\":\"${APPLICATION_ID}\",\"title\":\"Deploy staging ${GITHUB_SHA::7}\",\"description\":\"CI/CD from develop branch\"}"
+          )"
+
+          http_status="$(echo "${response}" | awk -F: '/HTTP_STATUS:/ { print $2 }')"
+          body="$(echo "${response}" | sed '/HTTP_STATUS:/d')"
+
+          echo "${body}"
+
+          if [[ "${http_status}" -lt 200 || "${http_status}" -ge 300 ]]; then
+            echo "Dokploy deploy failed with HTTP ${http_status}"
+            exit 1
+          fi

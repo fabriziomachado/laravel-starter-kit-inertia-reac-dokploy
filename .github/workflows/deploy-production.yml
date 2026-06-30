@@ -70,20 +70,39 @@ jobs:
           PROD_WEB_ID: ${{ secrets.PROD_WEB_ID }}
           PROD_WORKER_ID: ${{ secrets.PROD_WORKER_ID }}
           PROD_CRON_ID: ${{ secrets.PROD_CRON_ID }}
+          GHCR_REGISTRY_USERNAME: ${{ secrets.GHCR_REGISTRY_USERNAME }}
+          GHCR_REGISTRY_TOKEN: ${{ secrets.GHCR_REGISTRY_TOKEN }}
         run: |
+          set -euo pipefail
+          DOKPLOY_URL="${DOKPLOY_URL%/}"
+
           deploy_service() {
             local app_id="$1"
             local service_name="$2"
 
-            curl -sf -X POST "${DOKPLOY_URL}/api/application.saveDockerProvider" \
-              -H "x-api-key: ${DOKPLOY_API_KEY}" \
-              -H "Content-Type: application/json" \
-              -d "{\"applicationId\":\"${app_id}\",\"dockerImage\":\"${IMAGE}\"}"
+            if [[ -n "${GHCR_REGISTRY_USERNAME:-}" && -n "${GHCR_REGISTRY_TOKEN:-}" ]]; then
+              curl -sf -X POST "${DOKPLOY_URL}/api/application.saveDockerProvider" \
+                -H "x-api-key: ${DOKPLOY_API_KEY}" \
+                -H "Content-Type: application/json" \
+                -d "{\"applicationId\":\"${app_id}\",\"dockerImage\":\"${IMAGE}\",\"registryUrl\":\"ghcr.io\",\"username\":\"${GHCR_REGISTRY_USERNAME}\",\"password\":\"${GHCR_REGISTRY_TOKEN}\"}"
+            fi
 
-            curl -sf -X POST "${DOKPLOY_URL}/api/application.deploy" \
-              -H "x-api-key: ${DOKPLOY_API_KEY}" \
-              -H "Content-Type: application/json" \
-              -d "{\"applicationId\":\"${app_id}\",\"title\":\"Deploy ${service_name} ${GITHUB_REF_NAME}\",\"description\":\"Production release ${GITHUB_REF_NAME}\"}"
+            response="$(
+              curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "${DOKPLOY_URL}/api/application.deploy" \
+                -H "x-api-key: ${DOKPLOY_API_KEY}" \
+                -H "Content-Type: application/json" \
+                -d "{\"applicationId\":\"${app_id}\",\"title\":\"Deploy ${service_name} ${GITHUB_REF_NAME}\",\"description\":\"Production release ${GITHUB_REF_NAME}\"}"
+            )"
+
+            http_status="$(echo "${response}" | awk -F: '/HTTP_STATUS:/ { print $2 }')"
+            body="$(echo "${response}" | sed '/HTTP_STATUS:/d')"
+
+            echo "${body}"
+
+            if [[ "${http_status}" -lt 200 || "${http_status}" -ge 300 ]]; then
+              echo "Dokploy deploy failed for ${service_name} with HTTP ${http_status}"
+              exit 1
+            fi
           }
 
           deploy_service "${PROD_WEB_ID}" "laravel-web"
