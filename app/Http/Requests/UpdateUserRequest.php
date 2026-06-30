@@ -17,7 +17,10 @@ final class UpdateUserRequest extends FormRequest
     public function rules(): array
     {
         $user = $this->user();
-        assert($user instanceof User);
+
+        if (! $user instanceof User) {
+            abort(403);
+        }
 
         return [
             'name' => ['required', 'string', 'max:255'],

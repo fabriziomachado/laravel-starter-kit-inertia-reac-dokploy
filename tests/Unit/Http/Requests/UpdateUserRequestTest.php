@@ -24,3 +24,11 @@ it('defines validation rules for the authenticated user', function (): void {
 
     expect($uniqueRule)->not->toBeNull();
 });
+
+it('aborts when the user is not authenticated', function (): void {
+    $request = UpdateUserRequest::create(route('user-profile.update'), 'PATCH');
+    $request->setUserResolver(fn (): null => null);
+
+    expect(fn (): array => $request->rules())
+        ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
+});

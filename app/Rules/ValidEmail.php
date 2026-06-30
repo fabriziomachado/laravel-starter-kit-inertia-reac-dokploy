@@ -19,7 +19,11 @@ final readonly class ValidEmail implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        assert(is_string($value));
+        if (! is_string($value)) {
+            $fail('The :attribute must be a valid email address.');
+
+            return;
+        }
 
         if (in_array(preg_match(self::REGEX, $value), [0, false], true)) {
             $fail('The :attribute must be a valid email address.');

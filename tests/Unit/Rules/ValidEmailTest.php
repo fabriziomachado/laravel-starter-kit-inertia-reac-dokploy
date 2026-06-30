@@ -133,6 +133,11 @@ it('reports a validation message when the email is invalid', function (): void {
 it('rejects non-string values', function (): void {
     $rule = new ValidEmail;
 
-    expect(fn () => $rule->validate('email', 123, fn (): never => throw new Exception('Should not fail')))
-        ->toThrow(TypeError::class);
+    $failed = false;
+
+    $rule->validate('email', 123, function () use (&$failed): void {
+        $failed = true;
+    });
+
+    expect($failed)->toBeTrue();
 });
