@@ -1,0 +1,85 @@
+# Dev local: docker compose up --build
+# Copie .env.example → .env e use DB_HOST=postgres, REDIS_HOST=redis (ver seção Docker no .env.example)
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "true"
+      AUTORUN_LARAVEL_MIGRATION: "true"
+      AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
+      AUTORUN_LARAVEL_OPTIMIZE: "true"
+      AUTORUN_LARAVEL_STORAGE_LINK: "true"
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - laravel
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "false"
+    command: php /var/www/html/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - laravel
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "false"
+    command: php /var/www/html/artisan schedule:work
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - laravel
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-laravel}
+      POSTGRES_USER: ${DB_USERNAME:-laravel}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - laravel
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - laravel
+
+networks:
+  laravel:
+
+volumes:
+  postgres_data:
+  redis_data:

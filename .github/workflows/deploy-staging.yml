@@ -65,8 +65,7 @@ jobs:
         env:
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          APPLICATION_ID: ${{ secrets.DOKPLOY_STAGING_WEB_ID }}
-          IMAGE: ghcr.io/${{ github.repository }}:staging
+          APPLICATION_ID: ${{ secrets.DOKPLOY_STAGING_STACK_ID }}
           GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail

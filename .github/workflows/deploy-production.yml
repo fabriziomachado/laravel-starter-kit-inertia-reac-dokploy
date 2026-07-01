@@ -58,53 +58,32 @@ jobs:
   deploy-production:
     needs: build-push
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Deploy to Dokploy (production)
         env:
           DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          IMAGE: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          APPLICATION_ID: ${{ secrets.DOKPLOY_PRODUCTION_STACK_ID }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-          PROD_WEB_ID: ${{ secrets.PROD_WEB_ID }}
-          PROD_WORKER_ID: ${{ secrets.PROD_WORKER_ID }}
-          PROD_CRON_ID: ${{ secrets.PROD_CRON_ID }}
-          GHCR_REGISTRY_USERNAME: ${{ secrets.GHCR_REGISTRY_USERNAME }}
-          GHCR_REGISTRY_TOKEN: ${{ secrets.GHCR_REGISTRY_TOKEN }}
         run: |
           set -euo pipefail
           DOKPLOY_URL="${DOKPLOY_URL%/}"
 
-          deploy_service() {
-            local app_id="$1"
-            local service_name="$2"
+          response="$(
+            curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "${DOKPLOY_URL}/api/application.deploy" \
+              -H "x-api-key: ${DOKPLOY_API_KEY}" \
+              -H "Content-Type: application/json" \
+              -d "{\"applicationId\":\"${APPLICATION_ID}\",\"title\":\"Deploy production ${GITHUB_REF_NAME}\",\"description\":\"Production release ${GITHUB_REF_NAME}\"}"
+          )"
 
-            if [[ -n "${GHCR_REGISTRY_USERNAME:-}" && -n "${GHCR_REGISTRY_TOKEN:-}" ]]; then
-              curl -sf -X POST "${DOKPLOY_URL}/api/application.saveDockerProvider" \
-                -H "x-api-key: ${DOKPLOY_API_KEY}" \
-                -H "Content-Type: application/json" \
-                -d "{\"applicationId\":\"${app_id}\",\"dockerImage\":\"${IMAGE}\",\"registryUrl\":\"ghcr.io\",\"username\":\"${GHCR_REGISTRY_USERNAME}\",\"password\":\"${GHCR_REGISTRY_TOKEN}\"}"
-            fi
+          http_status="$(echo "${response}" | awk -F: '/HTTP_STATUS:/ { print $2 }')"
+          body="$(echo "${response}" | sed '/HTTP_STATUS:/d')"
 
-            response="$(
-              curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "${DOKPLOY_URL}/api/application.deploy" \
-                -H "x-api-key: ${DOKPLOY_API_KEY}" \
-                -H "Content-Type: application/json" \
-                -d "{\"applicationId\":\"${app_id}\",\"title\":\"Deploy ${service_name} ${GITHUB_REF_NAME}\",\"description\":\"Production release ${GITHUB_REF_NAME}\"}"
-            )"
+          echo "${body}"
 
-            http_status="$(echo "${response}" | awk -F: '/HTTP_STATUS:/ { print $2 }')"
-            body="$(echo "${response}" | sed '/HTTP_STATUS:/d')"
-
-            echo "${body}"
-
-            if [[ "${http_status}" -lt 200 || "${http_status}" -ge 300 ]]; then
-              echo "Dokploy deploy failed for ${service_name} with HTTP ${http_status}"
-              exit 1
-            fi
-          }
-
-          deploy_service "${PROD_WEB_ID}" "laravel-web"
-          deploy_service "${PROD_WORKER_ID}" "laravel-worker"
-          deploy_service "${PROD_CRON_ID}" "laravel-cron"
+          if [[ "${http_status}" -lt 200 || "${http_status}" -ge 300 ]]; then
+            echo "Dokploy deploy failed with HTTP ${http_status}"
+            exit 1
+          fi

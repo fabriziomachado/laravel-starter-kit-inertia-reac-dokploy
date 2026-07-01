@@ -1,0 +1,60 @@
+# Dokploy: Compose Type = Stack | Provider = Raw
+# Environment tab: vars Laravel (Dokploy gera o .env — use env_file abaixo)
+# Domains tab: serviço web, porta 8080
+# Postgres/Redis: serviços do ambiente Dokploy (DB_HOST / REDIS_HOST na Environment)
+
+services:
+  web:
+    image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy:latest
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "true"
+      AUTORUN_LARAVEL_MIGRATION: "true"
+      AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
+      AUTORUN_LARAVEL_OPTIMIZE: "true"
+      AUTORUN_LARAVEL_STORAGE_LINK: "true"
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
+        order: start-first
+
+  worker:
+    image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy:latest
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "false"
+    command: php /var/www/html/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  cron:
+    image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy:latest
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "false"
+    command: php /var/www/html/artisan schedule:work
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      update_config:
+        order: stop-first
+
+networks:
+  dokploy-network:
+    external: true
