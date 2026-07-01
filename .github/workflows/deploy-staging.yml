@@ -65,17 +65,17 @@ jobs:
         env:
           DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          APPLICATION_ID: ${{ vars.DOKPLOY_STAGING_STACK_ID }}
+          COMPOSE_ID: ${{ vars.DOKPLOY_STAGING_STACK_ID }}
           GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           DOKPLOY_URL="${DOKPLOY_URL%/}"
 
           response="$(
-            curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "${DOKPLOY_URL}/api/application.deploy" \
+            curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "${DOKPLOY_URL}/api/compose.deploy" \
               -H "x-api-key: ${DOKPLOY_API_KEY}" \
               -H "Content-Type: application/json" \
-              -d "{\"applicationId\":\"${APPLICATION_ID}\",\"title\":\"Deploy staging ${GITHUB_SHA::7}\",\"description\":\"CI/CD from develop branch\"}"
+              -d "{\"composeId\":\"${COMPOSE_ID}\",\"title\":\"Deploy staging ${GITHUB_SHA::7}\",\"description\":\"CI/CD from develop branch\"}"
           )"
 
           http_status="$(echo "${response}" | awk -F: '/HTTP_STATUS:/ { print $2 }')"
