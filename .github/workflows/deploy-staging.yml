@@ -1,5 +1,8 @@
 name: deploy-staging
 
+# Deploy controlado pelo GHA: CI → build GHCR → compose.deploy
+# No Dokploy: Autodeploy OFF, Provider GitHub, compose ./docker-compose.staging.yml
+
 on:
   push:
     branches:

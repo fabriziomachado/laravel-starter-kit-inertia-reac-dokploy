@@ -1,4 +1,5 @@
-# Dokploy: Compose Type = Stack | Provider = Raw
+# Dokploy: Compose Type = Stack | Provider = GitHub
+# Tag v* → ./docker-compose.production.yml | Autodeploy = OFF (deploy via GHA)
 # Environment tab: DOCKER_IMAGE + vars Laravel (Dokploy gera o .env)
 # Domains tab: serviço web, porta 8080
 # Postgres/Redis: serviços do ambiente Dokploy (DB_HOST / REDIS_HOST na Environment)

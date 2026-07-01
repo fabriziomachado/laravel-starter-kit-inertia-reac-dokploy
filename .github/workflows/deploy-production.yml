@@ -1,5 +1,8 @@
 name: deploy-production
 
+# Deploy controlado pelo GHA: CI → build GHCR → compose.deploy (tag v*)
+# No Dokploy: Autodeploy OFF, Provider GitHub, compose ./docker-compose.production.yml
+
 on:
   push:
     tags:
