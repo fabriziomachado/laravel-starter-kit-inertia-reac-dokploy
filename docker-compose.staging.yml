@@ -1,11 +1,13 @@
 # Dokploy: Compose Type = Stack | Provider = Raw
-# Environment tab: vars Laravel (Dokploy gera o .env — use env_file abaixo)
+# Environment tab: DOCKER_IMAGE + vars Laravel (Dokploy gera o .env)
 # Domains tab: serviço web, porta 8080
 # Postgres/Redis: serviços do ambiente Dokploy (DB_HOST / REDIS_HOST na Environment)
 
+x-laravel-image: &laravel-image ${DOCKER_IMAGE:-ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy:staging}
+
 services:
   web:
-    image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy:staging
+    image: *laravel-image
     env_file:
       - .env
     environment:
@@ -26,7 +28,7 @@ services:
         order: start-first
 
   worker:
-    image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy:staging
+    image: *laravel-image
     env_file:
       - .env
     environment:
@@ -40,7 +42,7 @@ services:
         condition: on-failure
 
   cron:
-    image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy:staging
+    image: *laravel-image
     env_file:
       - .env
     environment:

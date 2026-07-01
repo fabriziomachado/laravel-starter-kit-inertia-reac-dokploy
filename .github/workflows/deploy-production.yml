@@ -63,9 +63,9 @@ jobs:
     steps:
       - name: Deploy to Dokploy (production)
         env:
-          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          APPLICATION_ID: ${{ secrets.DOKPLOY_PRODUCTION_STACK_ID }}
+          APPLICATION_ID: ${{ vars.DOKPLOY_PRODUCTION_STACK_ID }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail

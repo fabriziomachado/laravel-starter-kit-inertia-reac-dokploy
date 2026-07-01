@@ -63,9 +63,9 @@ jobs:
     steps:
       - name: Deploy to Dokploy (staging)
         env:
-          DOKPLOY_URL: ${{ secrets.DOKPLOY_URL }}
+          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
           DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
-          APPLICATION_ID: ${{ secrets.DOKPLOY_STAGING_STACK_ID }}
+          APPLICATION_ID: ${{ vars.DOKPLOY_STAGING_STACK_ID }}
           GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
