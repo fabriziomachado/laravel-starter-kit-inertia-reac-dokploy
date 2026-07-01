@@ -42,7 +42,11 @@ services:
       - .env
     environment:
       AUTORUN_ENABLED: "false"
-    command: php /var/www/html/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    command: ["php", "/var/www/html/artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--max-time=3600"]
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-queue"]
+      start_period: 30s
     networks:
       - dokploy-network
     deploy:
@@ -56,7 +60,11 @@ services:
       - .env
     environment:
       AUTORUN_ENABLED: "false"
-    command: php /var/www/html/artisan schedule:work
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 30s
     networks:
       - dokploy-network
     deploy:
