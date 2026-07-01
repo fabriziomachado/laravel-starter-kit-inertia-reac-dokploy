@@ -16,6 +16,8 @@ services:
       AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
       AUTORUN_LARAVEL_OPTIMIZE: "true"
       AUTORUN_LARAVEL_STORAGE_LINK: "true"
+      HEALTHCHECK_PATH: /up
+      SSL_MODE: "off"
     depends_on:
       postgres:
         condition: service_started
