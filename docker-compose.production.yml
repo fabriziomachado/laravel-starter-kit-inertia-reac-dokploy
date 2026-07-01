@@ -60,7 +60,11 @@ services:
       - .env
     environment:
       AUTORUN_ENABLED: "false"
-    command: php /var/www/html/artisan schedule:work
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+    stop_signal: SIGTERM
+    healthcheck:
+      test: ["CMD", "healthcheck-schedule"]
+      start_period: 30s
     networks:
       - dokploy-network
     deploy:
