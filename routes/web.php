@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\SessionController;
-use App\Jobs\WriteQueueTestMessage;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserEmailResetNotificationController;
 use App\Http\Controllers\UserEmailVerificationController;
@@ -11,6 +10,7 @@ use App\Http\Controllers\UserEmailVerificationNotificationController;
 use App\Http\Controllers\UserPasswordController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\UserTwoFactorAuthenticationController;
+use App\Jobs\WriteQueueTestMessage;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -19,7 +19,7 @@ Route::get('/', fn () => Inertia::render('welcome', [
 ]))->name('home');
 
 Route::get('job', function () {
-    WriteQueueTestMessage::dispatch();
+    dispatch(new WriteQueueTestMessage());
 
     return response()->json([
         'message' => 'Job despachado para a fila.',
