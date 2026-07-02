@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 
 it('denies guest access to the pulse dashboard', function (): void {
     config(['pulse.allowed_emails' => 'admin@example.com']);
@@ -71,9 +73,9 @@ it('treats a non-string allowed email config as an empty list', function (): voi
 
 it('allows pulse cache classes to be unserialized from cache', function (): void {
     expect(config('cache.serializable_classes'))->toContain(
-        Illuminate\Support\Collection::class,
+        Collection::class,
         stdClass::class,
-        Carbon\CarbonImmutable::class,
+        CarbonImmutable::class,
     );
 });
 

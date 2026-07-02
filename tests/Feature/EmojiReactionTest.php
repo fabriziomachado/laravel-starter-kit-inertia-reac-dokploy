@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Events\EmojiReactionSent;
+use Illuminate\Broadcasting\Channel;
 use Illuminate\Support\Facades\Event;
 
 it('broadcasts a valid emoji reaction', function (): void {
@@ -14,15 +15,29 @@ it('broadcasts a valid emoji reaction', function (): void {
 
     $response->assertNoContent();
 
-    Event::assertDispatched(EmojiReactionSent::class, function (EmojiReactionSent $event): bool {
-        return $event->emoji === '❤️';
-    });
+    Event::assertDispatched(EmojiReactionSent::class, fn (EmojiReactionSent $event): bool => $event->emoji === '❤️');
 });
 
 it('uses a public broadcast event name for echo listeners', function (): void {
     $event = new EmojiReactionSent('🔥');
 
     expect($event->broadcastAs())->toBe('EmojiReactionSent');
+});
+
+it('broadcasts on the public reactions channel', function (): void {
+    $event = new EmojiReactionSent('🚀');
+
+    $channels = $event->broadcastOn();
+
+    expect($channels)->toHaveCount(1)
+        ->and($channels[0])->toBeInstanceOf(Channel::class)
+        ->and($channels[0]->name)->toBe('reactions');
+});
+
+it('includes the emoji in the broadcast payload', function (): void {
+    $event = new EmojiReactionSent('🤯');
+
+    expect($event->broadcastWith())->toBe(['emoji' => '🤯']);
 });
 
 it('rejects an invalid emoji reaction', function (): void {
