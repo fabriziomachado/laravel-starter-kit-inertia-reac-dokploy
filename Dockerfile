@@ -22,6 +22,7 @@ RUN mkdir -p storage/framework/sessions \
     storage/framework/cache/data \
     storage/logs \
     bootstrap/cache \
+    && rm -f bootstrap/cache/packages.php bootstrap/cache/services.php bootstrap/cache/config.php \
     && cp .env.example .env \
     && php artisan key:generate --force \
     && composer dump-autoload --optimize \
