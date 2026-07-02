@@ -175,8 +175,20 @@ docker compose exec web composer test
 Alternativa equivalente ao CI (sem stack em execução):
 
 ```bash
+# Suite completa (1ª vez ~2 min; depois ~1 min com cache)
 ./scripts/composer-test-docker.sh
+
+# Só testes unitários + coverage (~30s)
+./scripts/composer-test-docker.sh unit
+
+# Só PHPStan + types TS
+./scripts/composer-test-docker.sh types
+
+# Rebuild da imagem CI (PHP 8.5 + xdebug + bun)
+./scripts/composer-test-docker.sh rebuild-image
 ```
+
+A imagem `laravel-starter-kit-ci:local` (`Dockerfile.ci`) evita reinstalar apt/pecl/xdebug a cada run. O container `web` **não** serve para testes — usa `--no-dev` (sem Pest/PHPStan).
 
 ### Lições aprendidas (Reverb + Pulse)
 

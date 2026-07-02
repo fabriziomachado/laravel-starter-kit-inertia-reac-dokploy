@@ -3,44 +3,96 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+IMAGE="${TEST_IMAGE:-laravel-starter-kit-ci:local}"
+TEST_TARGET="${1:-test}"
 
-docker run --rm \
-    -v "${ROOT}:/app" \
-    -w /app \
-    -e COMPOSER_MEMORY_LIMIT=-1 \
-    -e XDEBUG_MODE=coverage \
-    php:8.5-cli-bookworm \
-    bash -lc '
-        set -euo pipefail
-        export DEBIAN_FRONTEND=noninteractive
+if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
+    echo "Building CI image ${IMAGE} (one-time, ~1 min)..."
+    docker build -f "${ROOT}/Dockerfile.ci" -t "${IMAGE}" "${ROOT}"
+fi
 
-        apt-get update -qq
-        apt-get install -y -qq git unzip curl libzip-dev libsqlite3-dev libpng-dev libonig-dev libxml2-dev libcurl4-openssl-dev autoconf dpkg-dev file g++ gcc libc-dev make pkg-config re2c > /dev/null
+run_in_ci() {
+    docker run --rm \
+        --user root \
+        -v "${ROOT}:/app" \
+        -v laravel-starter-kit-composer-cache:/tmp/composer-cache \
+        -v laravel-starter-kit-bun-cache:/root/.bun/install/cache \
+        -v laravel-starter-kit-playwright-cache:/root/.cache/ms-playwright \
+        -e COMPOSER_CACHE_DIR=/tmp/composer-cache \
+        -e COMPOSER_MEMORY_LIMIT=-1 \
+        -e XDEBUG_MODE=coverage \
+        -w /app \
+        "${IMAGE}" \
+        bash -lc "$1"
+}
 
-        docker-php-ext-install -j"$(nproc)" zip pdo_sqlite sockets pcntl > /dev/null
-        pecl install xdebug > /dev/null
-        docker-php-ext-enable xdebug > /dev/null
+case "${TEST_TARGET}" in
+    test)
+        run_in_ci '
+            set -euo pipefail
+            export PATH="/root/.bun/bin:${PATH:-}"
 
-        cat > /usr/local/etc/php/conf.d/testing.ini <<EOF
-memory_limit=512M
-xdebug.mode=coverage
-EOF
+            git config --global --add safe.directory /app
 
-        curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-        curl -fsSL https://bun.sh/install | bash > /dev/null
-        export PATH="/root/.bun/bin:${PATH}"
+            if [ ! -f vendor/autoload.php ]; then
+                composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+            fi
 
-        curl -fsSL https://deb.nodesource.com/setup_24.x | bash - > /dev/null
-        apt-get install -y -qq nodejs > /dev/null
+            if [ ! -f .env ]; then
+                cp .env.example .env
+                php artisan key:generate --force
+            fi
 
-        git config --global --add safe.directory /app
+            if [ ! -d node_modules ]; then
+                bun install
+            fi
 
-        composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
-        cp .env.example .env
-        php artisan key:generate --force
-        bun install
-        bun run build
-        bunx playwright install --with-deps chromium
+            if [ ! -f public/build/manifest.json ]; then
+                bun run build
+            fi
 
-        composer test
-    '
+            if ! compgen -G "/root/.cache/ms-playwright/chromium-*" > /dev/null; then
+                bunx playwright install --with-deps chromium
+            fi
+
+            composer test
+        '
+        ;;
+    unit)
+        run_in_ci '
+            set -euo pipefail
+            git config --global --add safe.directory /app
+            [ -f vendor/autoload.php ] || composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+            [ -f .env ] || { cp .env.example .env && php artisan key:generate --force; }
+            XDEBUG_MODE=coverage ./vendor/bin/pest --parallel --coverage --exactly=100.0 --exclude-testsuite Browser
+        '
+        ;;
+    types)
+        run_in_ci '
+            set -euo pipefail
+            export PATH="/root/.bun/bin:${PATH:-}"
+            git config --global --add safe.directory /app
+            [ -f vendor/autoload.php ] || composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+            [ -f .env ] || { cp .env.example .env && php artisan key:generate --force; }
+            [ -d node_modules ] || bun install
+            composer test:types
+        '
+        ;;
+    lint)
+        run_in_ci '
+            set -euo pipefail
+            export PATH="/root/.bun/bin:${PATH:-}"
+            git config --global --add safe.directory /app
+            [ -f vendor/autoload.php ] || composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
+            [ -d node_modules ] || bun install
+            composer test:lint
+        '
+        ;;
+    rebuild-image)
+        docker build -f "${ROOT}/Dockerfile.ci" -t "${IMAGE}" "${ROOT}"
+        ;;
+    *)
+        echo "Usage: $0 [test|unit|types|lint|rebuild-image]"
+        exit 1
+        ;;
+esac

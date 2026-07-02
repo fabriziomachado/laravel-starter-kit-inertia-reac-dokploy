@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1
+# Imagem local para composer test — build uma vez: docker build -f Dockerfile.ci -t laravel-starter-kit-ci:local .
+
+FROM serversideup/php:8.5-cli
+
+USER root
+
+ENV PHP_EXTENSIONS="pdo_sqlite,zip,sockets,pcntl"
+
+RUN install-php-extensions xdebug sockets
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=oven/bun:alpine /usr/local/bin/bun /usr/local/bin/bun
+
+RUN apt-get update -qq \
+    && apt-get install -y -qq git unzip curl > /dev/null \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN cat > /usr/local/etc/php/conf.d/testing.ini <<'EOF'
+memory_limit=512M
+xdebug.mode=coverage
+EOF
+
+WORKDIR /app
+
+USER www-data
