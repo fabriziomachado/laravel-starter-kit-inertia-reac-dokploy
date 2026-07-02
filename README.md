@@ -95,8 +95,7 @@ Variáveis necessárias no `.env`:
 
 - `QUEUE_CONNECTION=redis`
 - `REDIS_HOST=redis` (no compose local) ou `127.0.0.1` (Redis local)
-- `HORIZON_ALLOWED_EMAILS=admin@example.com` (e-mails separados por vírgula)
-- `PULSE_ALLOWED_EMAILS=admin@example.com` (e-mails separados por vírgula)
+- `HORIZON_ALLOWED_EMAILS=` e `PULSE_ALLOWED_EMAILS=` **vazios em local** (dashboards abertos; em Dokploy, preencha com e-mails)
 - `PULSE_DB_CONNECTION=pulse` + `PULSE_DB_DATABASE=laravel_pulse` (banco separado para métricas)
 - `BROADCAST_CONNECTION=reverb` + variáveis `REVERB_*` / `REVERB_CLIENT_*` (ver `.env.example`)
 
@@ -178,6 +177,50 @@ Alternativa equivalente ao CI (sem stack em execução):
 ```bash
 ./scripts/composer-test-docker.sh
 ```
+
+### Lições aprendidas (Reverb + Pulse)
+
+Checklist para evitar problemas em uma **nova instalação** ou ao replicar este stack:
+
+#### Reverb / Echo (tempo real)
+
+| Problema | Sintoma | Solução |
+|----------|---------|---------|
+| `wsPath` no Echo | WebSocket em `/app/app/...`, conexão falha | **Não** definir `wsPath` em `echo.ts` — o Pusher já usa `/app` |
+| Nome do evento | `POST /reactions` retorna 204, mas outro browser não reage | Evento precisa de `broadcastAs(): 'EmojiReactionSent'` — o Echo escuta `.EmojiReactionSent`, não `App\Events\...` |
+| `toOthers()` | Emoji duplica no cliente que clicou | Enviar header `X-Socket-ID` no `fetch` com `echo.socketId()` |
+| JS em cache | Correção no frontend não aparece | Hard refresh (`Ctrl+Shift+R`) ou rebuild: `docker compose build web` |
+| Porta errada no browser | WS tenta `:8080` em vez de Reverb | Local: `REVERB_CLIENT_HOST=localhost`, `REVERB_CLIENT_PORT=8081` (não confundir com `REVERB_HOST=reverb` interno) |
+
+Verificação rápida no DevTools → Network → WS: deve conectar em `ws://localhost:8081/app/<REVERB_APP_KEY>` com status **101**.
+
+#### Pulse (`/pulse`)
+
+| Problema | Sintoma | Solução |
+|----------|---------|---------|
+| E-mails preenchidos em local | 403 *This action is unauthorized* | Deixe `PULSE_ALLOWED_EMAILS=` vazio com `APP_ENV=local`; preencha só em staging/production |
+| Laravel 13 + cache | Erro *incomplete object* `Illuminate\Support\Collection` no poll Livewire | `config/cache.php` → `serializable_classes` deve incluir `Collection`, `CarbonImmutable`, `stdClass` |
+| Sem `pulse-check` | Cards Reverb vazios ou incompletos | Subir o serviço `pulse-check` (`php artisan pulse:check`) |
+| Banco Pulse inexistente | Migrate falha ou Pulse sem tabelas | Criar `laravel_pulse` (init script só roda na **primeira** subida do volume Postgres) |
+| Pulse no banco errado | Tabelas `pulse_*` em `laravel` | Dropar tabelas antigas no banco app, limpar linha em `migrations`, rodar `migrate` de novo |
+| CI quebra com `PULSE_DB_CONNECTION=pulse` | GHA tenta Postgres inexistente | `phpunit.xml` deve forçar `PULSE_DB_CONNECTION=""` nos testes |
+
+O dashboard `/pulse` usa **Livewire internamente** (pacote Laravel Pulse) — isso é normal; a aplicação continua Inertia + React + Wayfinder.
+
+#### Docker Compose
+
+| Problema | Sintoma | Solução |
+|----------|---------|---------|
+| Vars `DB_*` ausentes no compose | Container `web` não sobe | Defaults `${DB_DATABASE:-laravel}` etc. no `docker-compose.yml` |
+| Imagem desatualizada | Backend ok, frontend antigo | `docker compose build web && docker compose up -d web` após mudanças em JS/config |
+| Extensão PHP | Reverb instável | `PHP_EXTENSIONS="sockets"` no `Dockerfile` |
+
+#### Dokploy
+
+- Um único `php artisan migrate` no start do `web` migra **app + Pulse** (conexões diferentes) — não precisa job separado.
+- Crie `laravel_pulse` no Postgres **antes** do primeiro deploy com `PULSE_DB_CONNECTION=pulse`.
+- Domains: serviço `web` (:8080) + serviço `reverb` com paths `/app` e `/apps` no mesmo host.
+- `REVERB_CLIENT_*` aponta para o domínio público (443/https); `REVERB_HOST=reverb` é rede interna do stack.
 
 ## Available Tooling
 
