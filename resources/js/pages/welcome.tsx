@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import EmojiReactions from '@/components/emoji-reactions';
 import { dashboard, login, register } from '@/routes';
 
 export default function Welcome({
@@ -399,6 +400,7 @@ export default function Welcome({
                     </main>
                 </div>
                 <div className="hidden h-14.5 lg:block"></div>
+                <EmojiReactions />
             </div>
         </>
     );

@@ -81,6 +81,28 @@ it('sets sidebarOpen to false when cookie is false', function (): void {
     expect($shared['sidebarOpen'])->toBeFalse();
 });
 
+it('shares reverb client configuration from broadcasting config', function (): void {
+    config([
+        'broadcasting.connections.reverb.key' => 'shared-key',
+        'broadcasting.connections.reverb.client.host' => 'ws.example.com',
+        'broadcasting.connections.reverb.client.port' => 8081,
+        'broadcasting.connections.reverb.client.scheme' => 'http',
+    ]);
+
+    $middleware = new HandleInertiaRequests();
+
+    $request = Request::create('/', 'GET');
+
+    $shared = $middleware->share($request);
+
+    expect($shared['reverb'])->toBe([
+        'key' => 'shared-key',
+        'host' => 'ws.example.com',
+        'port' => 8081,
+        'scheme' => 'http',
+    ]);
+});
+
 it('includes parent shared data', function (): void {
     $middleware = new HandleInertiaRequests();
 

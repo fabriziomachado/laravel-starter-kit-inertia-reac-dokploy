@@ -1,5 +1,6 @@
 # Dev local: docker compose up --build
 # Copie .env.example → .env e use DB_HOST=postgres, REDIS_HOST=redis (ver seção Docker no .env.example)
+# Reverb WebSocket: localhost:8081 (paths /app e /apps) | pulse-check: métricas Reverb no /pulse
 
 services:
   web:
@@ -19,6 +20,9 @@ services:
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-laravel}
+      DB_USERNAME: ${DB_USERNAME:-laravel}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
       REDIS_HOST: redis
       CACHE_STORE: redis
       SESSION_DRIVER: redis
@@ -44,6 +48,9 @@ services:
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-laravel}
+      DB_USERNAME: ${DB_USERNAME:-laravel}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
       REDIS_HOST: redis
       CACHE_STORE: redis
       SESSION_DRIVER: redis
@@ -72,6 +79,9 @@ services:
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-laravel}
+      DB_USERNAME: ${DB_USERNAME:-laravel}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
       REDIS_HOST: redis
       CACHE_STORE: redis
       SESSION_DRIVER: redis
@@ -89,14 +99,79 @@ services:
     networks:
       - laravel
 
+  reverb:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-laravel}
+      DB_USERNAME: ${DB_USERNAME:-laravel}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      REDIS_HOST: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+    command: ["php", "/var/www/html/artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    stop_signal: SIGTERM
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "healthcheck-reverb"]
+      start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - laravel
+
+  pulse-check:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-laravel}
+      DB_USERNAME: ${DB_USERNAME:-laravel}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      REDIS_HOST: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+    command: ["php", "/var/www/html/artisan", "pulse:check"]
+    stop_signal: SIGTERM
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    networks:
+      - laravel
+
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${DB_DATABASE:-laravel}
       POSTGRES_USER: ${DB_USERNAME:-laravel}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      PULSE_DB_DATABASE: ${PULSE_DB_DATABASE:-laravel_pulse}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init-pulse-db.sh:/docker-entrypoint-initdb.d/02-pulse-db.sh:ro
     networks:
       - laravel
 

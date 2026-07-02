@@ -9,5 +9,6 @@ it('includes the container identifier on the welcome page', function (): void {
     $response->assertInertia(fn ($page) => $page
         ->component('welcome')
         ->where('containerId', gethostname())
+        ->has('reverb')
     );
 });

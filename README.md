@@ -80,7 +80,7 @@ You should see 100% test coverage and all quality checks passing.
 
 ## Docker + Horizon
 
-This project uses [Laravel Horizon](https://laravel.com/docs/horizon) with Redis queues in Docker and Dokploy deployments.
+This project uses [Laravel Horizon](https://laravel.com/docs/horizon) with Redis queues, [Laravel Reverb](https://laravel.com/docs/reverb) for real-time WebSockets, and [Laravel Pulse](https://laravel.com/docs/pulse) for monitoring in Docker and Dokploy deployments.
 
 ### Stack local
 
@@ -96,20 +96,73 @@ Variáveis necessárias no `.env`:
 - `QUEUE_CONNECTION=redis`
 - `REDIS_HOST=redis` (no compose local) ou `127.0.0.1` (Redis local)
 - `HORIZON_ALLOWED_EMAILS=admin@example.com` (e-mails separados por vírgula)
+- `PULSE_ALLOWED_EMAILS=admin@example.com` (e-mails separados por vírgula)
+- `PULSE_DB_CONNECTION=pulse` + `PULSE_DB_DATABASE=laravel_pulse` (banco separado para métricas)
+- `BROADCAST_CONNECTION=reverb` + variáveis `REVERB_*` / `REVERB_CLIENT_*` (ver `.env.example`)
 
 ### Serviços
 
 | Serviço | Função |
 |---------|--------|
-| `web` | HTTP (FrankenPHP) — dashboard em `/horizon` |
+| `web` | HTTP (FrankenPHP) — dashboards em `/horizon` e `/pulse` |
 | `worker` | `php artisan horizon` — processa jobs Redis |
 | `cron` | `php artisan schedule:work` — inclui `horizon:snapshot` a cada 5 min |
-| `redis` | Broker de filas e métricas do Horizon |
-| `postgres` | Banco de dados |
+| `reverb` | `php artisan reverb:start` — WebSocket em `:8081` (local) |
+| `pulse-check` | `php artisan pulse:check` — métricas Reverb no Pulse |
+| `redis` | Broker de filas, scaling Reverb e métricas |
+| `postgres` | Banco da aplicação (`laravel`) + init do banco Pulse (`laravel_pulse`) |
+
+### Banco separado do Pulse
+
+Métricas do Pulse ficam em **`laravel_pulse`**, separadas do banco da app (`laravel`). A migration `create_pulse_tables` usa a conexão `PULSE_DB_CONNECTION` (via `PulseMigration`).
+
+- **Local (Docker):** o script `docker/postgres/init-pulse-db.sh` cria `laravel_pulse` na primeira subida do volume Postgres.
+- **Migrate:** um único `php artisan migrate` no container `web` migra app + Pulse (conexões diferentes).
+- **CI (GHA):** `phpunit.xml` define `PULSE_DB_CONNECTION=""` — testes usam SQLite `:memory:` sem Postgres.
+- **Volume Postgres já existente:** crie o banco manualmente antes do deploy:
+
+```sql
+CREATE DATABASE laravel_pulse OWNER laravel;
+```
+
+Se o Pulse já rodou no banco `laravel`, após criar `laravel_pulse` e configurar as env vars, remova as tabelas antigas:
+
+```sql
+-- no banco laravel
+DROP TABLE IF EXISTS pulse_aggregates, pulse_entries, pulse_values;
+DELETE FROM migrations WHERE migration LIKE '%create_pulse_tables%';
+```
+
+### Reações de emoji (Reverb)
+
+A página inicial (`/`) inclui reações de emoji em tempo real. Visitantes enviam `POST /reactions`; o broadcast usa Reverb no canal público `reactions`.
+
+Localmente, após `docker compose up --build`:
+
+- Web: [http://localhost:8080](http://localhost:8080)
+- Reverb: `ws://localhost:8081/app` (configure `REVERB_CLIENT_HOST=localhost`, `REVERB_CLIENT_PORT=8081`)
+
+### Dokploy (Reverb no mesmo domínio)
+
+Na aba **Domains** do serviço compose, além do serviço `web` (porta 8080), adicione duas entradas no **mesmo host** apontando para o serviço `reverb` (porta 8080):
+
+- path `/app` — WebSocket dos clientes
+- path `/apps` — API interna do Reverb
+
+Na aba **Environment**:
+
+- `BROADCAST_CONNECTION=reverb`
+- `REVERB_HOST=reverb`, `REVERB_PORT=8080`, `REVERB_SCHEME=http` (web → reverb na rede interna)
+- `REVERB_CLIENT_HOST=<domínio>`, `REVERB_CLIENT_PORT=443`, `REVERB_CLIENT_SCHEME=https` (navegador → Traefik)
+- `REVERB_SCALING_ENABLED=true` (Redis do ambiente)
+- `PULSE_ALLOWED_EMAILS=<emails admin>`
+- `PULSE_DB_CONNECTION=pulse`
+- `PULSE_DB_DATABASE=laravel_pulse` (crie o database no Postgres do ambiente antes do deploy)
 
 ### Dashboard e job de teste
 
-- Dashboard: [http://localhost:8080/horizon](http://localhost:8080/horizon) — login Fortify + e-mail na lista `HORIZON_ALLOWED_EMAILS`
+- Horizon: [http://localhost:8080/horizon](http://localhost:8080/horizon) — login Fortify + e-mail em `HORIZON_ALLOWED_EMAILS`
+- Pulse: [http://localhost:8080/pulse](http://localhost:8080/pulse) — login Fortify + e-mail em `PULSE_ALLOWED_EMAILS` (local sem lista = aberto)
 - Job de teste: `GET /job` despacha um job processado pelo container `worker`
 
 ### Verificação no container
