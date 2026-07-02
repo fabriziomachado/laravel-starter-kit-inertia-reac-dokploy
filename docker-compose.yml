@@ -16,6 +16,13 @@ services:
       AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
       AUTORUN_LARAVEL_OPTIMIZE: "true"
       AUTORUN_LARAVEL_STORAGE_LINK: "true"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      REDIS_HOST: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
       HEALTHCHECK_PATH: /up
       SSL_MODE: "off"
     depends_on:
@@ -34,11 +41,18 @@ services:
       - .env
     environment:
       AUTORUN_ENABLED: "false"
-    command: ["php", "/var/www/html/artisan", "queue:work", "redis", "--sleep=3", "--tries=3", "--max-time=3600"]
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      REDIS_HOST: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+    command: ["php", "/var/www/html/artisan", "horizon"]
     stop_signal: SIGTERM
     healthcheck:
-      test: ["CMD", "healthcheck-queue"]
-      start_period: 30s
+      test: ["CMD", "healthcheck-horizon"]
+      start_period: 10s
     depends_on:
       postgres:
         condition: service_started
@@ -55,6 +69,13 @@ services:
       - .env
     environment:
       AUTORUN_ENABLED: "false"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      REDIS_HOST: redis
+      CACHE_STORE: redis
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
     command: ["php", "/var/www/html/artisan", "schedule:work"]
     stop_signal: SIGTERM
     healthcheck:

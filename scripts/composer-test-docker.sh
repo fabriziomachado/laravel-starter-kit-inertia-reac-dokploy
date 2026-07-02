@@ -17,7 +17,7 @@ docker run --rm \
         apt-get update -qq
         apt-get install -y -qq git unzip curl libzip-dev libsqlite3-dev libpng-dev libonig-dev libxml2-dev libcurl4-openssl-dev autoconf dpkg-dev file g++ gcc libc-dev make pkg-config re2c > /dev/null
 
-        docker-php-ext-install -j"$(nproc)" zip pdo_sqlite sockets > /dev/null
+        docker-php-ext-install -j"$(nproc)" zip pdo_sqlite sockets pcntl > /dev/null
         pecl install xdebug > /dev/null
         docker-php-ext-enable xdebug > /dev/null
 

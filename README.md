@@ -78,10 +78,58 @@ composer test
 
 You should see 100% test coverage and all quality checks passing.
 
+## Docker + Horizon
+
+This project uses [Laravel Horizon](https://laravel.com/docs/horizon) with Redis queues in Docker and Dokploy deployments.
+
+### Stack local
+
+```bash
+cp .env.example .env
+# Descomente a seção Docker Compose no .env (DB_HOST=postgres, REDIS_HOST=redis, etc.)
+
+docker compose up --build
+```
+
+Variáveis necessárias no `.env`:
+
+- `QUEUE_CONNECTION=redis`
+- `REDIS_HOST=redis` (no compose local) ou `127.0.0.1` (Redis local)
+- `HORIZON_ALLOWED_EMAILS=admin@example.com` (e-mails separados por vírgula)
+
+### Serviços
+
+| Serviço | Função |
+|---------|--------|
+| `web` | HTTP (FrankenPHP) — dashboard em `/horizon` |
+| `worker` | `php artisan horizon` — processa jobs Redis |
+| `cron` | `php artisan schedule:work` — inclui `horizon:snapshot` a cada 5 min |
+| `redis` | Broker de filas e métricas do Horizon |
+| `postgres` | Banco de dados |
+
+### Dashboard e job de teste
+
+- Dashboard: [http://localhost:8080/horizon](http://localhost:8080/horizon) — login Fortify + e-mail na lista `HORIZON_ALLOWED_EMAILS`
+- Job de teste: `GET /job` despacha um job processado pelo container `worker`
+
+### Verificação no container
+
+Suite completa dentro do stack Docker:
+
+```bash
+docker compose exec web composer test
+```
+
+Alternativa equivalente ao CI (sem stack em execução):
+
+```bash
+./scripts/composer-test-docker.sh
+```
+
 ## Available Tooling
 
 ### Development
-- `composer dev` - Starts Laravel server, queue worker, log monitoring, and Vite+ dev server concurrently
+- `composer dev` - Starts Laravel server, Horizon, log monitoring, and Vite dev server concurrently
 
 ### Code Quality
 - `composer lint` - Runs Rector (refactoring), Pint (PHP formatting), and Oxfmt (JS/TS formatting)

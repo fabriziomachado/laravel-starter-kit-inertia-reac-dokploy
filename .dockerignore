@@ -28,7 +28,10 @@ storage/framework/cache
 storage/framework/sessions
 storage/framework/views
 storage/pail
+database/.gitignore
 bootstrap/ssr
+bootstrap/cache/*.php
+database/*.sqlite*
 public/build
 public/hot
 public/storage
