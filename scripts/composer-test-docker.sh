@@ -30,7 +30,7 @@ case "${TEST_TARGET}" in
     test)
         run_in_ci '
             set -euo pipefail
-            export PATH="/root/.bun/bin:${PATH:-}"
+            export PATH="/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
             git config --global --add safe.directory /app
 
@@ -51,9 +51,7 @@ case "${TEST_TARGET}" in
                 bun run build
             fi
 
-            if ! compgen -G "/root/.cache/ms-playwright/chromium-*" > /dev/null; then
-                bunx playwright install --with-deps chromium
-            fi
+            bun x playwright install --with-deps chromium
 
             composer test
         '
@@ -70,7 +68,7 @@ case "${TEST_TARGET}" in
     types)
         run_in_ci '
             set -euo pipefail
-            export PATH="/root/.bun/bin:${PATH:-}"
+            export PATH="/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
             git config --global --add safe.directory /app
             [ -f vendor/autoload.php ] || composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
             [ -f .env ] || { cp .env.example .env && php artisan key:generate --force; }
@@ -81,7 +79,7 @@ case "${TEST_TARGET}" in
     lint)
         run_in_ci '
             set -euo pipefail
-            export PATH="/root/.bun/bin:${PATH:-}"
+            export PATH="/root/.bun/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
             git config --global --add safe.directory /app
             [ -f vendor/autoload.php ] || composer install --no-interaction --prefer-dist --optimize-autoloader --no-progress
             [ -d node_modules ] || bun install
