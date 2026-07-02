@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Inertia\Middleware;
 
 final class HandleInertiaRequests extends Middleware
@@ -39,10 +40,10 @@ final class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'reverb' => [
-                'key' => config('broadcasting.connections.reverb.key'),
-                'host' => config('broadcasting.connections.reverb.client.host'),
-                'port' => (int) config('broadcasting.connections.reverb.client.port'),
-                'scheme' => config('broadcasting.connections.reverb.client.scheme'),
+                'key' => Config::string('broadcasting.connections.reverb.key'),
+                'host' => Config::string('broadcasting.connections.reverb.client.host'),
+                'port' => Config::integer('broadcasting.connections.reverb.client.port'),
+                'scheme' => Config::string('broadcasting.connections.reverb.client.scheme'),
             ],
         ];
     }
