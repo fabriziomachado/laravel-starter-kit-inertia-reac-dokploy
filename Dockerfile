@@ -38,6 +38,8 @@ RUN bun install --frozen-lockfile 2>/dev/null || bun install \
 
 FROM serversideup/php:8.5-frankenphp AS runtime
 
+ENV PHP_EXTENSIONS="sockets"
+
 WORKDIR /var/www/html
 
 COPY --from=php-deps --chown=www-data:www-data /app/app ./app

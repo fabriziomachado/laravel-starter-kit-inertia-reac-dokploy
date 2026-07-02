@@ -16,4 +16,7 @@ parameters:
 
     level: max
 
+    excludePaths:
+        - config/pulse.php
+
     tmpDir: /tmp/phpstan

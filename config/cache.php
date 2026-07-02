@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 return [
@@ -127,6 +129,11 @@ return [
     |
     */
 
-    'serializable_classes' => false,
+    'serializable_classes' => [
+        // Required by Laravel Pulse / Reverb dashboard cards (RemembersQueries caches Collections).
+        CarbonImmutable::class,
+        Collection::class,
+        stdClass::class,
+    ],
 
 ];

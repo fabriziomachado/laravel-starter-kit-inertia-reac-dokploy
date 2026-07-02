@@ -1,7 +1,7 @@
 # Dokploy: Compose Type = Stack | Provider = GitHub
 # Branch develop → ./docker-compose.staging.yml | Autodeploy = OFF (deploy via GHA)
 # Environment tab: DOCKER_IMAGE + vars Laravel (Dokploy gera o .env)
-# Domains tab: serviço web, porta 8080
+# Domains tab: serviço web porta 8080 + reverb paths /app e /apps porta 8080
 # Postgres/Redis: serviços do ambiente Dokploy (DB_HOST / REDIS_HOST na Environment)
 
 x-laravel-image: &laravel-image ${DOCKER_IMAGE:-ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy:staging}
@@ -69,6 +69,45 @@ services:
         condition: on-failure
       update_config:
         order: stop-first
+
+  reverb:
+    image: *laravel-image
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "false"
+    command: ["php", "/var/www/html/artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    stop_signal: SIGTERM
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "healthcheck-reverb"]
+      start_period: 10s
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      update_config:
+        order: start-first
+
+  pulse-check:
+    image: *laravel-image
+    env_file:
+      - .env
+    environment:
+      AUTORUN_ENABLED: "false"
+    command: ["php", "/var/www/html/artisan", "pulse:check"]
+    stop_signal: SIGTERM
+    healthcheck:
+      disable: true
+    networks:
+      - dokploy-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
 networks:
   dokploy-network:

@@ -141,3 +141,20 @@
         @apply bg-background text-foreground;
     }
 }
+
+@keyframes emoji-float-up {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-220px) scale(1.4);
+    }
+}
+
+.emoji-float {
+    animation: emoji-float-up 2.5s ease-out forwards;
+    pointer-events: none;
+}

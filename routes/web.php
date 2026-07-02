@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\EmojiReactionController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserEmailResetNotificationController;
@@ -17,6 +18,10 @@ use Inertia\Inertia;
 Route::get('/', fn () => Inertia::render('welcome', [
     'containerId' => gethostname(),
 ]))->name('home');
+
+Route::post('reactions', [EmojiReactionController::class, 'store'])
+    ->middleware('throttle:30,1')
+    ->name('reactions.store');
 
 Route::get('job', function () {
     dispatch(new WriteQueueTestMessage());

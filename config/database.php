@@ -101,6 +101,22 @@ return [
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
+        'pulse' => [
+            'driver' => env('PULSE_DB_DRIVER', env('DB_CONNECTION', 'sqlite')),
+            'url' => env('PULSE_DB_URL'),
+            'host' => env('PULSE_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('PULSE_DB_PORT', env('DB_PORT', '5432')),
+            'database' => env('PULSE_DB_DATABASE', 'laravel_pulse'),
+            'username' => env('PULSE_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('PULSE_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+        ],
+
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DB_URL'),
