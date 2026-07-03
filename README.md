@@ -143,20 +143,79 @@ Localmente, após `docker compose up --build`:
 
 ### Dokploy (Reverb no mesmo domínio)
 
-Na aba **Domains** do serviço compose, além do serviço `web` (porta 8080), adicione duas entradas no **mesmo host** apontando para o serviço `reverb` (porta 8080):
+#### Domains (obrigatório — 3 entradas)
 
-- path `/app` — WebSocket dos clientes
-- path `/apps` — API interna do Reverb
+Na aba **Domains** do stack compose, configure **três** rotas no **mesmo host**:
 
-Na aba **Environment**:
+| Service | Host | Path | Port | Protocol |
+|---------|------|------|------|----------|
+| `web` | `<seu-dominio>` | `/` | `8080` | HTTPS |
+| `reverb` | `<seu-dominio>` | `/app` | `8080` | HTTPS |
+| `reverb` | `<seu-dominio>` | `/apps` | `8080` | HTTPS |
+
+- **Port** = porta **interna** do container (`8080`), não `443`.
+- **Path** = `/app` e `/apps` **sem** barra no final.
+- **Service** = nome do serviço no `docker-compose.staging.yml` (`reverb`), não o nome longo do container Swarm (`githubcicd-..._reverb.1@dokploy02`).
+
+Se só existir a entrada `web` + `/`, o path `/app/...` cai no Laravel → **404 HTML** → WebSocket nunca conecta.
+
+#### Environment
+
+**Rede interna** (container `web` → container `reverb`):
+
+```env
+REVERB_HOST=reverb
+REVERB_PORT=8080
+REVERB_SCHEME=http
+```
+
+**Browser** (Echo → Traefik → reverb):
+
+```env
+REVERB_CLIENT_HOST=<domínio da aba Domains>
+REVERB_CLIENT_PORT=443
+REVERB_CLIENT_SCHEME=https
+APP_URL=https://<domínio da aba Domains>
+```
+
+`REVERB_CLIENT_HOST` deve ser **igual** ao domínio onde o usuário acessa o site — **não** use o hostname interno `reverb`.
+
+Demais variáveis:
 
 - `BROADCAST_CONNECTION=reverb`
-- `REVERB_HOST=reverb`, `REVERB_PORT=8080`, `REVERB_SCHEME=http` (web → reverb na rede interna)
-- `REVERB_CLIENT_HOST=<domínio>`, `REVERB_CLIENT_PORT=443`, `REVERB_CLIENT_SCHEME=https` (navegador → Traefik)
-- `REVERB_SCALING_ENABLED=true` (Redis do ambiente)
-- `PULSE_ALLOWED_EMAILS=<emails admin>`
-- `PULSE_DB_CONNECTION=pulse`
-- `PULSE_DB_DATABASE=laravel_pulse` (crie o database no Postgres do ambiente antes do deploy)
+- `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET` (valores únicos por ambiente)
+- `REVERB_SCALING_ENABLED=true` (requer Redis acessível)
+- `PULSE_DB_CONNECTION=pulse` + `PULSE_DB_DATABASE=laravel_pulse` (crie o database no Postgres do ambiente antes do deploy)
+- `PULSE_ALLOWED_EMAILS` e `HORIZON_ALLOWED_EMAILS` (e-mails admin, separados por vírgula)
+
+#### Verificação pós-deploy
+
+**1. Reverb rodando** — logs do container `reverb`:
+
+```
+Starting server on 0.0.0.0:8080 (reverb).
+```
+
+**2. Rota `/app` chega no Reverb** (não no Laravel):
+
+```bash
+curl -I "https://<dominio>/app/<REVERB_APP_KEY>"
+```
+
+| Resposta | Significado |
+|----------|-------------|
+| **403** `text/plain` | OK — chegou no Reverb |
+| **404** `text/html` (headers Laravel) | `/app` ainda vai para `web` — corrija Domains |
+
+**3. WebSocket no browser** (Edge/Chrome → F12 → **Rede** → filtro **Socket** → recarregar com Ctrl+Shift+R):
+
+- URL: `wss://<dominio>/app/<REVERB_APP_KEY>`
+- Status: **101 Switching Protocols**
+- Cabeçalhos provisórios + status vazio = conexão não completou (Domains ou reverb down)
+
+**4. Emojis em tempo real** — abra o site em **dois browsers**, clique num emoji; deve aparecer nos dois.
+
+> `POST /reactions` retornando **204** é normal (sucesso). Se 204 mas não sincroniza, o problema é WebSocket/broadcast — não o endpoint HTTP.
 
 ### Dashboard e job de teste
 
@@ -229,10 +288,13 @@ O dashboard `/pulse` usa **Livewire internamente** (pacote Laravel Pulse) — is
 
 #### Dokploy
 
-- Um único `php artisan migrate` no start do `web` migra **app + Pulse** (conexões diferentes) — não precisa job separado.
-- Crie `laravel_pulse` no Postgres **antes** do primeiro deploy com `PULSE_DB_CONNECTION=pulse`.
-- Domains: serviço `web` (:8080) + serviço `reverb` com paths `/app` e `/apps` no mesmo host.
-- `REVERB_CLIENT_*` aponta para o domínio público (443/https); `REVERB_HOST=reverb` é rede interna do stack.
+| Problema | Sintoma | Solução |
+|----------|---------|---------|
+| Só domain `web` + `/` | `curl /app/...` → 404 HTML; WS com cabeçalhos provisórios | Adicionar Domains: `reverb` + `/app` e `reverb` + `/apps` (porta 8080) |
+| `REVERB_CLIENT_HOST` ≠ domínio do site | WS tenta host errado (ex.: domínio antigo) | `REVERB_CLIENT_HOST` = host exato da aba Domains do `web` |
+| Confundir nomes Swarm com env | Procura `REVERB_HOST` nos logs de container | `REVERB_HOST=reverb` (nome do serviço no compose); nomes `stack_reverb.1@node` são só para logs |
+| Pulse sem banco dedicado | Migrate falha ou tabelas no banco errado | Criar `laravel_pulse` no Postgres **antes** do primeiro deploy |
+| Migrate duplicado | Job extra desnecessário | Um único `php artisan migrate` no start do `web` migra app + Pulse |
 
 ## Available Tooling
 
