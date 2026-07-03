@@ -24,7 +24,18 @@ services:
     networks:
       - dokploy-network
     deploy:
+      mode: replicated
       replicas: 2
+      placement:
+        constraints:
+          - node.role == worker
+          # ou fixar no nó exato:
+          # - node.hostname == dokploy02
+      resources:
+        limits:
+          memory: 512M      # nó tem só 3.56GB — evite estourar
+        reservations:
+          memory: 256M
       restart_policy:
         condition: on-failure
       update_config:
