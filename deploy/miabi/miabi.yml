@@ -1,3 +1,5 @@
+
+
 # Laravel starter kit (Inertia + React) no Miabi / Docker Swarm
 # Traduzido de docker-compose.production.yml (branch develop, commit 0615198).
 #
@@ -45,16 +47,13 @@ spec:
       spec: { generate: true, length: 32 }
 
     # ---- aplicacoes (mesma imagem, comandos diferentes) -------------------------
-    # Valores repetidos nas 5 apps ficam ancorados na reactweb (primeira da lista) e sao
-    # reaproveitados nas demais com *alias / "<<: *laravel-env". Uma chave escrita na propria app
-    # sobrescreve a do bloco comum. Ancoras so valem dentro deste documento (Project).
     # HTTP + migrations (AUTORUN). Unico servico com AUTORUN_ENABLED=true.
     - apiVersion: miabi.io/v1
       kind: Application
       metadata: { name: reactweb }
       spec:
-        image: &image ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy
-        tag: &tag sha-0615198
+        image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy
+        tag: sha-0615198
         stack: react
         ports:
           - { container: 8080, scheme: http }
@@ -66,44 +65,40 @@ spec:
             parallelism: 1
             delaySeconds: 10
         env:
-          <<: &laravel-env
-            APP_NAME: "React"
-            APP_ENV: "production"
-            APP_DEBUG: "false"
-            APP_URL: "https://react.miabi.unesc.net"
-            APP_KEY: "{{ .secrets.appkey }}"
-            LOG_CHANNEL: "stderr"
-            LOG_LEVEL: "info"
-            DB_CONNECTION: "pgsql"
-            DB_HOST: "{{ .databases.reactdb.host }}"
-            DB_PORT: "{{ .databases.reactdb.port }}"
-            DB_DATABASE: "{{ .databases.reactdb.name }}"
-            DB_USERNAME: "{{ .databases.reactdb.user }}"
-            DB_PASSWORD: "{{ .databases.reactdb.password }}"
-            PULSE_DB_DATABASE: "{{ .databases.reactdb.name }}"
-            SESSION_DRIVER: "redis"
-            CACHE_STORE: "redis"
-            QUEUE_CONNECTION: "redis"
-            REDIS_CLIENT: "phpredis"
-            REDIS_HOST: "{{ .databases.reactredis.host }}"
-            REDIS_PORT: "{{ .databases.reactredis.port }}"
-            REDIS_PASSWORD: "{{ .databases.reactredis.password }}"
-            BROADCAST_CONNECTION: "reverb"
-            REVERB_APP_ID: "100001"
-            REVERB_APP_KEY: "{{ .secrets.reverbkey }}"
-            REVERB_APP_SECRET: "{{ .secrets.reverbsecret }}"
-            REVERB_HOST: "{{ .applications.reactreverb.host }}"
-            REVERB_PORT: "{{ .applications.reactreverb.port }}"
-            REVERB_SCHEME: "{{ .applications.reactreverb.scheme }}"
-            REVERB_CLIENT_HOST: "react.miabi.unesc.net"
-            REVERB_CLIENT_PORT: "443"
-            REVERB_CLIENT_SCHEME: "https"
-            REVERB_SCALING_ENABLED: "true"
-            MAIL_MAILER: "log"
-            FILESYSTEM_DISK: "local"
-            HORIZON_ALLOWED_EMAILS: "admin@example.com"
-            PULSE_ALLOWED_EMAILS: "admin@example.com"
-            AUTORUN_ENABLED: "false"   # padrao; so a reactweb liga (migrations)
+          APP_NAME: "React"
+          APP_ENV: "production"
+          APP_DEBUG: "false"
+          APP_URL: "https://react.miabi.unesc.net"
+          APP_KEY: "{{ .secrets.appkey }}"
+          LOG_CHANNEL: "stderr"
+          LOG_LEVEL: "info"
+          DB_CONNECTION: "pgsql"
+          DB_HOST: "{{ .databases.reactdb.host }}"
+          DB_PORT: "{{ .databases.reactdb.port }}"
+          DB_DATABASE: "{{ .databases.reactdb.name }}"
+          DB_USERNAME: "{{ .databases.reactdb.user }}"
+          DB_PASSWORD: "{{ .databases.reactdb.password }}"
+          PULSE_DB_DATABASE: "{{ .databases.reactdb.name }}"
+          SESSION_DRIVER: "redis"
+          CACHE_STORE: "redis"
+          QUEUE_CONNECTION: "redis"
+          REDIS_CLIENT: "phpredis"
+          REDIS_HOST: "{{ .databases.reactredis.host }}"
+          REDIS_PORT: "{{ .databases.reactredis.port }}"
+          REDIS_PASSWORD: "{{ .databases.reactredis.password }}"
+          BROADCAST_CONNECTION: "reverb"
+          REVERB_APP_ID: "100001"
+          REVERB_APP_KEY: "{{ .secrets.reverbkey }}"
+          REVERB_APP_SECRET: "{{ .secrets.reverbsecret }}"
+          REVERB_HOST: "{{ .applications.reactreverb.host }}"
+          REVERB_PORT: "{{ .applications.reactreverb.port }}"
+          REVERB_SCHEME: "{{ .applications.reactreverb.scheme }}"
+          REVERB_CLIENT_HOST: "react.miabi.unesc.net"
+          REVERB_CLIENT_PORT: "443"
+          REVERB_CLIENT_SCHEME: "https"
+          REVERB_SCALING_ENABLED: "true"
+          MAIL_MAILER: "log"
+          FILESYSTEM_DISK: "local"
           AUTORUN_ENABLED: "true"
           AUTORUN_LARAVEL_MIGRATION: "true"
           AUTORUN_LARAVEL_MIGRATION_ISOLATION: "true"
@@ -111,15 +106,17 @@ spec:
           AUTORUN_LARAVEL_STORAGE_LINK: "true"
           HEALTHCHECK_PATH: "/up"
           SSL_MODE: "off"
-        secretEnv: &laravel-secret-env [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
+        secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
     # Fila (Horizon). 'recreate' evita dois Horizon rodando juntos durante o deploy.
     - apiVersion: miabi.io/v1
       kind: Application
       metadata: { name: reactworker }
       spec:
-        image: *image
-        tag: *tag
+        image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy
+        tag: sha-0615198
         stack: react
         command:
           # O HEALTHCHECK da imagem base faz curl em localhost:8080/healthcheck (so faz sentido no web).
@@ -132,16 +129,52 @@ spec:
           replicas: 1
           strategy: recreate
         env:
-          <<: *laravel-env
-        secretEnv: *laravel-secret-env
+          APP_NAME: "React"
+          APP_ENV: "production"
+          APP_DEBUG: "false"
+          APP_URL: "https://react.miabi.unesc.net"
+          APP_KEY: "{{ .secrets.appkey }}"
+          LOG_CHANNEL: "stderr"
+          LOG_LEVEL: "info"
+          DB_CONNECTION: "pgsql"
+          DB_HOST: "{{ .databases.reactdb.host }}"
+          DB_PORT: "{{ .databases.reactdb.port }}"
+          DB_DATABASE: "{{ .databases.reactdb.name }}"
+          DB_USERNAME: "{{ .databases.reactdb.user }}"
+          DB_PASSWORD: "{{ .databases.reactdb.password }}"
+          PULSE_DB_DATABASE: "{{ .databases.reactdb.name }}"
+          SESSION_DRIVER: "redis"
+          CACHE_STORE: "redis"
+          QUEUE_CONNECTION: "redis"
+          REDIS_CLIENT: "phpredis"
+          REDIS_HOST: "{{ .databases.reactredis.host }}"
+          REDIS_PORT: "{{ .databases.reactredis.port }}"
+          REDIS_PASSWORD: "{{ .databases.reactredis.password }}"
+          BROADCAST_CONNECTION: "reverb"
+          REVERB_APP_ID: "100001"
+          REVERB_APP_KEY: "{{ .secrets.reverbkey }}"
+          REVERB_APP_SECRET: "{{ .secrets.reverbsecret }}"
+          REVERB_HOST: "{{ .applications.reactreverb.host }}"
+          REVERB_PORT: "{{ .applications.reactreverb.port }}"
+          REVERB_SCHEME: "{{ .applications.reactreverb.scheme }}"
+          REVERB_CLIENT_HOST: "react.miabi.unesc.net"
+          REVERB_CLIENT_PORT: "443"
+          REVERB_CLIENT_SCHEME: "https"
+          REVERB_SCALING_ENABLED: "true"
+          MAIL_MAILER: "log"
+          FILESYSTEM_DISK: "local"
+          AUTORUN_ENABLED: "false"
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
+        secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
     # Scheduler. Sempre 1 replica; 'recreate' = stop-first, como no compose.
     - apiVersion: miabi.io/v1
       kind: Application
       metadata: { name: reactcron }
       spec:
-        image: *image
-        tag: *tag
+        image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy
+        tag: sha-0615198
         stack: react
         command:
           # O HEALTHCHECK da imagem base faz curl em localhost:8080/healthcheck (so faz sentido no web).
@@ -154,16 +187,52 @@ spec:
           replicas: 1
           strategy: recreate
         env:
-          <<: *laravel-env
-        secretEnv: *laravel-secret-env
+          APP_NAME: "React"
+          APP_ENV: "production"
+          APP_DEBUG: "false"
+          APP_URL: "https://react.miabi.unesc.net"
+          APP_KEY: "{{ .secrets.appkey }}"
+          LOG_CHANNEL: "stderr"
+          LOG_LEVEL: "info"
+          DB_CONNECTION: "pgsql"
+          DB_HOST: "{{ .databases.reactdb.host }}"
+          DB_PORT: "{{ .databases.reactdb.port }}"
+          DB_DATABASE: "{{ .databases.reactdb.name }}"
+          DB_USERNAME: "{{ .databases.reactdb.user }}"
+          DB_PASSWORD: "{{ .databases.reactdb.password }}"
+          PULSE_DB_DATABASE: "{{ .databases.reactdb.name }}"
+          SESSION_DRIVER: "redis"
+          CACHE_STORE: "redis"
+          QUEUE_CONNECTION: "redis"
+          REDIS_CLIENT: "phpredis"
+          REDIS_HOST: "{{ .databases.reactredis.host }}"
+          REDIS_PORT: "{{ .databases.reactredis.port }}"
+          REDIS_PASSWORD: "{{ .databases.reactredis.password }}"
+          BROADCAST_CONNECTION: "reverb"
+          REVERB_APP_ID: "100001"
+          REVERB_APP_KEY: "{{ .secrets.reverbkey }}"
+          REVERB_APP_SECRET: "{{ .secrets.reverbsecret }}"
+          REVERB_HOST: "{{ .applications.reactreverb.host }}"
+          REVERB_PORT: "{{ .applications.reactreverb.port }}"
+          REVERB_SCHEME: "{{ .applications.reactreverb.scheme }}"
+          REVERB_CLIENT_HOST: "react.miabi.unesc.net"
+          REVERB_CLIENT_PORT: "443"
+          REVERB_CLIENT_SCHEME: "https"
+          REVERB_SCALING_ENABLED: "true"
+          MAIL_MAILER: "log"
+          FILESYSTEM_DISK: "local"
+          AUTORUN_ENABLED: "false"
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
+        secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
     # WebSocket (Reverb). 2 replicas; REVERB_SCALING_ENABLED usa o Redis para sincronizar.
     - apiVersion: miabi.io/v1
       kind: Application
       metadata: { name: reactreverb }
       spec:
-        image: *image
-        tag: *tag
+        image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy
+        tag: sha-0615198
         stack: react
         command: ["php", "/var/www/html/artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
         ports:
@@ -173,17 +242,53 @@ spec:
           replicas: 2
           strategy: rolling
         env:
-          <<: *laravel-env
+          APP_NAME: "React"
+          APP_ENV: "production"
+          APP_DEBUG: "false"
+          APP_URL: "https://react.miabi.unesc.net"
+          APP_KEY: "{{ .secrets.appkey }}"
+          LOG_CHANNEL: "stderr"
+          LOG_LEVEL: "info"
+          DB_CONNECTION: "pgsql"
+          DB_HOST: "{{ .databases.reactdb.host }}"
+          DB_PORT: "{{ .databases.reactdb.port }}"
+          DB_DATABASE: "{{ .databases.reactdb.name }}"
+          DB_USERNAME: "{{ .databases.reactdb.user }}"
+          DB_PASSWORD: "{{ .databases.reactdb.password }}"
+          PULSE_DB_DATABASE: "{{ .databases.reactdb.name }}"
+          SESSION_DRIVER: "redis"
+          CACHE_STORE: "redis"
+          QUEUE_CONNECTION: "redis"
+          REDIS_CLIENT: "phpredis"
+          REDIS_HOST: "{{ .databases.reactredis.host }}"
+          REDIS_PORT: "{{ .databases.reactredis.port }}"
+          REDIS_PASSWORD: "{{ .databases.reactredis.password }}"
+          BROADCAST_CONNECTION: "reverb"
+          REVERB_APP_ID: "100001"
+          REVERB_APP_KEY: "{{ .secrets.reverbkey }}"
+          REVERB_APP_SECRET: "{{ .secrets.reverbsecret }}"
+          REVERB_HOST: "{{ .applications.reactreverb.host }}"
+          REVERB_PORT: "{{ .applications.reactreverb.port }}"
+          REVERB_SCHEME: "{{ .applications.reactreverb.scheme }}"
+          REVERB_CLIENT_HOST: "react.miabi.unesc.net"
+          REVERB_CLIENT_PORT: "443"
+          REVERB_CLIENT_SCHEME: "https"
+          REVERB_SCALING_ENABLED: "true"
+          MAIL_MAILER: "log"
+          FILESYSTEM_DISK: "local"
+          AUTORUN_ENABLED: "false"
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
           HEALTHCHECK_PATH: "/up"   # Reverb responde GET /up; o padrao da imagem (/healthcheck) da 404
-        secretEnv: *laravel-secret-env
+        secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
     # Coletor do Pulse. 1 replica.
     - apiVersion: miabi.io/v1
       kind: Application
       metadata: { name: reactpulse }
       spec:
-        image: *image
-        tag: *tag
+        image: ghcr.io/fabriziomachado/laravel-starter-kit-inertia-reac-dokploy
+        tag: sha-0615198
         stack: react
         command:
           # O HEALTHCHECK da imagem base faz curl em localhost:8080/healthcheck (so faz sentido no web).
@@ -196,8 +301,44 @@ spec:
           replicas: 1
           strategy: recreate
         env:
-          <<: *laravel-env
-        secretEnv: *laravel-secret-env
+          APP_NAME: "React"
+          APP_ENV: "production"
+          APP_DEBUG: "false"
+          APP_URL: "https://react.miabi.unesc.net"
+          APP_KEY: "{{ .secrets.appkey }}"
+          LOG_CHANNEL: "stderr"
+          LOG_LEVEL: "info"
+          DB_CONNECTION: "pgsql"
+          DB_HOST: "{{ .databases.reactdb.host }}"
+          DB_PORT: "{{ .databases.reactdb.port }}"
+          DB_DATABASE: "{{ .databases.reactdb.name }}"
+          DB_USERNAME: "{{ .databases.reactdb.user }}"
+          DB_PASSWORD: "{{ .databases.reactdb.password }}"
+          PULSE_DB_DATABASE: "{{ .databases.reactdb.name }}"
+          SESSION_DRIVER: "redis"
+          CACHE_STORE: "redis"
+          QUEUE_CONNECTION: "redis"
+          REDIS_CLIENT: "phpredis"
+          REDIS_HOST: "{{ .databases.reactredis.host }}"
+          REDIS_PORT: "{{ .databases.reactredis.port }}"
+          REDIS_PASSWORD: "{{ .databases.reactredis.password }}"
+          BROADCAST_CONNECTION: "reverb"
+          REVERB_APP_ID: "100001"
+          REVERB_APP_KEY: "{{ .secrets.reverbkey }}"
+          REVERB_APP_SECRET: "{{ .secrets.reverbsecret }}"
+          REVERB_HOST: "{{ .applications.reactreverb.host }}"
+          REVERB_PORT: "{{ .applications.reactreverb.port }}"
+          REVERB_SCHEME: "{{ .applications.reactreverb.scheme }}"
+          REVERB_CLIENT_HOST: "react.miabi.unesc.net"
+          REVERB_CLIENT_PORT: "443"
+          REVERB_CLIENT_SCHEME: "https"
+          REVERB_SCALING_ENABLED: "true"
+          MAIL_MAILER: "log"
+          FILESYSTEM_DISK: "local"
+          AUTORUN_ENABLED: "false"
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
+        secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
     # ---- rotas ------------------------------------------------------------------
     - apiVersion: miabi.io/v1
