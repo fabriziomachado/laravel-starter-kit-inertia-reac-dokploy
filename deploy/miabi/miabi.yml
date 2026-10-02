@@ -104,6 +104,8 @@ spec:
           AUTORUN_LARAVEL_STORAGE_LINK: "true"
           HEALTHCHECK_PATH: "/up"
           SSL_MODE: "off"
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
         secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
     # Fila (Horizon). 'recreate' evita dois Horizon rodando juntos durante o deploy.
@@ -160,6 +162,8 @@ spec:
           MAIL_MAILER: "log"
           FILESYSTEM_DISK: "local"
           AUTORUN_ENABLED: "false"
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
         secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
     # Scheduler. Sempre 1 replica; 'recreate' = stop-first, como no compose.
@@ -216,6 +220,8 @@ spec:
           MAIL_MAILER: "log"
           FILESYSTEM_DISK: "local"
           AUTORUN_ENABLED: "false"
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
         secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
     # WebSocket (Reverb). 2 replicas; REVERB_SCALING_ENABLED usa o Redis para sincronizar.
@@ -269,6 +275,8 @@ spec:
           MAIL_MAILER: "log"
           FILESYSTEM_DISK: "local"
           AUTORUN_ENABLED: "false"
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
           HEALTHCHECK_PATH: "/up"   # Reverb responde GET /up; o padrao da imagem (/healthcheck) da 404
         secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
@@ -326,6 +334,8 @@ spec:
           MAIL_MAILER: "log"
           FILESYSTEM_DISK: "local"
           AUTORUN_ENABLED: "false"
+          HORIZON_ALLOWED_EMAILS: "admin@unesc.net"
+          PULSE_ALLOWED_EMAILS: "admin@unesc.net"
         secretEnv: [APP_KEY, DB_PASSWORD, REDIS_PASSWORD, REVERB_APP_KEY, REVERB_APP_SECRET]
 
     # ---- rotas ------------------------------------------------------------------
