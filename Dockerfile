@@ -36,7 +36,7 @@ COPY --from=oven/bun:alpine /usr/local/bin/bun /usr/local/bin/bun
 RUN bun install --frozen-lockfile 2>/dev/null || bun install \
     && bun run build
 
-FROM serversideup/php:8.5-frankenphp AS runtime
+FROM serversideup/php:8.5-frankenphp-v5.0.3 AS runtime
 
 ENV PHP_EXTENSIONS="sockets"
 

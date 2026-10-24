@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Imagem local para composer test — build uma vez: docker build -f Dockerfile.ci -t laravel-starter-kit-ci:local .
 
-FROM serversideup/php:8.5-cli
+FROM serversideup/php:8.5-cli-v5.0.3
 
 USER root
 
