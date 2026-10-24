@@ -136,6 +136,9 @@ export default function Welcome({
                                     </a>
                                 </li>
                             </ul>
+                            <p className="mt-6 inline-block rounded bg-[#1b1b18] px-4 py-2 font-mono text-xl font-semibold text-white lg:text-2xl dark:bg-[#EDEDEC] dark:text-[#1b1b18]">
+                                Container: {containerId}
+                            </p>
                         </div>
                         <div className="relative -mb-px aspect-[335/364] w-full shrink-0 overflow-hidden rounded-t-lg bg-[#fff2f2] lg:mb-0 lg:-ml-px lg:aspect-auto lg:w-[438px] lg:rounded-t-none lg:rounded-r-lg dark:bg-[#1D0002]">
                             {/* Laravel Logo */}
@@ -392,9 +395,6 @@ export default function Welcome({
                                     />
                                 </g>
                             </svg>
-                            <p className="absolute top-3 left-3 z-10 rounded bg-[#1b1b18]/80 px-2 py-1 font-mono text-xs text-white dark:bg-[#EDEDEC]/90 dark:text-[#1b1b18]">
-                                Container: {containerId}
-                            </p>
                             <div className="absolute inset-0 rounded-t-lg shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-t-none lg:rounded-r-lg dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]"></div>
                         </div>
                     </main>
